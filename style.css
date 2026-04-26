@@ -1,0 +1,94 @@
+body {
+    background: #1a1a2e;
+    color: #e6e6e6;
+    font-family: 'Segoe UI', sans-serif;
+    padding: 20px;
+    margin: 0;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #00adb5;
+}
+
+header h1 {
+    margin: 0 0 10px 0;
+    color: #00adb5;
+}
+
+header p {
+    margin: 5px 0;
+    opacity: 0.8;
+}
+
+main {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.card {
+    background: #16213e;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    transition: background-color 0.3s;
+}
+
+.card h2 {
+    margin-top: 0;
+    color: #00adb5;
+    font-size: 1.2rem;
+    border-bottom: 1px solid #0f3460;
+    padding-bottom: 10px;
+}
+
+.gauge-container {
+    margin: 15px 0;
+    text-align: center;
+}
+
+.gauge-label {
+    display: block;
+    margin-top: 8px;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.indicators {
+    display: flex;
+    gap: 15px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    background: #0f3460;
+    border-radius: 5px;
+    flex: 1;
+    min-width: 120px;
+}
+
+.dot {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #ff2e63;
+    transition: background 0.3s;
+}
+
+.indicator.active .dot {
+    background: #00ff88;
+}
+
+.indicator.active {
+    background: #0a2d4a;
+}

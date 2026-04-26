@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BAS IoT Dashboard (Dummy)</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-gauges@2.1.7/gauge.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>BAS IoT Monitoring Dashboard</h1>
+        <p>Lab Perancangan Politeknik Negeri Bandung</p>
+        <p style="color:#00adb5; font-size:0.9rem;">Dummy Data Simulation - Updates Every 2 Seconds</p>
+    </header>
+    <main>
+        <!-- WWTP (Slave 1) -->
+        <section class="card">
+            <h2>Waste Water Treatment Plant (Slave 1)</h2>
+            <div class="gauge-container">
+                <canvas id="wwtp-flow"></canvas>
+                <span class="gauge-label">Laju Alir Air (L/min)</span>
+            </div>
+            <div class="gauge-container">
+                <canvas id="wwtp-pressure"></canvas>
+                <span class="gauge-label">Tekanan Pipa (Bar)</span>
+            </div>
+            <div class="gauge-container">
+                <canvas id="wwtp-ph"></canvas>
+                <span class="gauge-label">Nilai pH Air</span>
+            </div>
+            <div class="indicators">
+                <div class="indicator" id="wwtp-pump">
+                    <span class="dot"></span>
+                    <span>Pompa Status</span>
+                </div>
+                <div class="indicator" id="wwtp-valve">
+                    <span class="dot"></span>
+                    <span>Katup Status</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Clean Water (Slave 2) -->
+        <section class="card">
+            <h2>Clean Water Distribution (Slave 2)</h2>
+            <div class="gauge-container">
+                <canvas id="cw-flow"></canvas>
+                <span class="gauge-label">Laju Alir (L/min)</span>
+            </div>
+            <div class="gauge-container">
+                <canvas id="cw-pressure"></canvas>
+                <span class="gauge-label">Tekanan (Bar)</span>
+            </div>
+            <div class="indicator" id="cw-dist">
+                <span class="dot"></span>
+                <span>Status Distribusi</span>
+            </div>
+        </section>
+
+        <!-- Fire System (Slave 3) -->
+        <section class="card">
+            <h2>Fire Protection System (Slave 3)</h2>
+            <div class="gauge-container">
+                <canvas id="fire-temp"></canvas>
+                <span class="gauge-label">Suhu Ruangan (°C)</span>
+            </div>
+            <div class="gauge-container">
+                <canvas id="fire-smoke"></canvas>
+                <span class="gauge-label">Sensor Asap (0-1023)</span>
+            </div>
+            <div class="indicator" id="fire-status">
+                <span class="dot"></span>
+                <span>Status Kebakaran</span>
+            </div>
+        </section>
+    </main>
+    <script src="script.js"></script>
+</body>
+</html>
