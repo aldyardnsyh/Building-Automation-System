@@ -1,17 +1,46 @@
 'use client';
 
-import { useBASData } from '@/hooks/useBASData';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { useBASData } from '@/hooks/useBASData';
+import SystemCard from '@/components/SystemCard';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Sparkline dimuat dinamis tanpa SSR agar tidak ada layout shift saat hidrasi.
+const Sparkline = dynamic(() => import('@/components/charts/Sparkline'), {
+  ssr: false,
+  loading: () => <Skeleton className="h-11 w-full" />,
+});
+
+// Jumlah unit PLC Modbus di dashboard ini: Unit 1 (%MW100), Unit 2 (%MW200), Unit 3 (%MW300).
+const UNIT_COUNT = 3;
+// Total titik data 11 (WWTP 5 + Air Bersih 3 + Kebakaran 3), status Kebakaran adalah turunan alarm
+// bukan sensor fisik sehingga sensor terpasang dihitung 10.
+const SENSOR_COUNT = 10;
+
+function formatKoma(value: number): string {
+  return String(value).replace('.', ',');
+}
+
+function getPhColor(ph: number): string {
+  if (ph < 6 || ph > 8.5) return '#ef4444';
+  return '#1e293b';
+}
 
 export default function Dashboard() {
-  const { data, isLoading, alarms } = useBASData(2000);
+  const { data, isLoading, trendHistory, alarms } = useBASData(2000);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-gray-500 font-medium">Memuat Dashboard...</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Skeleton className="h-8 w-64 mb-2" />
+        <Skeleton className="h-4 w-96 mb-8" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-36" />
+          ))}
         </div>
       </div>
     );
@@ -21,187 +50,204 @@ export default function Dashboard() {
     return a.level === 'critical' || a.level === 'warning';
   });
 
+  const isFireAlarm = (data?.fire_system?.status ?? 0) === 1;
+  const wwtpPh = data?.wwtp?.ph ?? 0;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="page-title">Dashboard Overview</h1>
-        <p className="page-subtitle">Ringkasan kondisi seluruh sistem monitoring BAS</p>
+      <div className="mb-6">
+        <h1 className="page-title">Ringkasan Sistem</h1>
+        <p className="page-subtitle">Kondisi terkini seluruh unit BAS</p>
+        <p className="text-xs text-slate-500 -mt-4 mb-0">
+          {UNIT_COUNT} Unit PLC • {SENSOR_COUNT} Sensor • OPC UA + MQTT
+        </p>
       </div>
 
+      {/* Kartu KPI ala shadcn: nilai live besar + sparkline tren. */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-          <div className="text-xs text-slate-500 uppercase tracking-wide">Total Slave</div>
-          <div className="text-2xl font-bold text-slate-800 mt-1">3</div>
-          <div className="text-xs text-emerald-600 mt-1">Modbus TCP/IP</div>
-        </div>
-        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-          <div className="text-xs text-slate-500 uppercase tracking-wide">Sensor Aktif</div>
-          <div className="text-2xl font-bold text-slate-800 mt-1">10</div>
-          <div className="text-xs text-blue-600 mt-1">Analog + Digital</div>
-        </div>
-        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-          <div className="text-xs text-slate-500 uppercase tracking-wide">Alarm Aktif</div>
-          <div className="text-2xl font-bold text-slate-800 mt-1">{activeAlarms.length}</div>
-          <div className={`text-xs mt-1 ${activeAlarms.length > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-            {activeAlarms.length > 0 ? 'Perlu Perhatian' : 'Semua Normal'}
-          </div>
-        </div>
-        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-          <div className="text-xs text-slate-500 uppercase tracking-wide">Status Sistem</div>
-          <div className="text-2xl font-bold text-emerald-600 mt-1">Online</div>
-          <div className="text-xs text-slate-400 mt-1">OPC UA + MQTT</div>
-        </div>
+        <Card>
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground">Laju Alir IPAL</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div className="text-2xl font-bold font-mono">
+              {data?.wwtp?.flow || 0} <span className="text-xs font-medium text-muted-foreground">L/min</span>
+            </div>
+            <Sparkline data={trendHistory['wwtp-flow'] || []} color="#3b82f6" id="kpi-wwtp-flow" label="Laju alir IPAL" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground">Laju Air Bersih</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div className="text-2xl font-bold font-mono">
+              {data?.clean_water?.flow || 0} <span className="text-xs font-medium text-muted-foreground">L/min</span>
+            </div>
+            <Sparkline data={trendHistory['cw-flow'] || []} color="#06b6d4" id="kpi-cw-flow" label="Laju air bersih" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground">Suhu Zona A</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div className="text-2xl font-bold font-mono">
+              {data?.fire_system?.temp || 0} <span className="text-xs font-medium text-muted-foreground">°C</span>
+            </div>
+            <Sparkline data={trendHistory['fire-temp'] || []} color="#f97316" id="kpi-fire-temp" label="Suhu zona A" />
+          </CardContent>
+        </Card>
+        <Card className={activeAlarms.length > 0 ? 'border-red-300' : ''}>
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground">Alarm Aktif</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-bold font-mono">{activeAlarms.length}</span>
+              <Badge variant={activeAlarms.length > 0 ? 'destructive' : 'success'}>
+                {activeAlarms.length > 0 ? 'Perlu perhatian' : 'Semua normal'}
+              </Badge>
+            </div>
+            <div className="h-11 flex items-end">
+              <Link href="/alarm" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
+                Lihat semua alarm
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="system-card">
-          <div className="card-header">
-            <div className="card-header-left">
-              <div className="card-icon bg-amber-50">🏭</div>
-              <div>
-                <h2>WWTP</h2>
-                <div className="subtitle">Waste Water Treatment</div>
-              </div>
-            </div>
-            <Link href="/wwtp" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
-              Detail
-            </Link>
+        <SystemCard
+          title="IPAL (Instalasi Pengolahan Air Limbah)"
+          subtitle="Unit 1 • %MW100"
+          initial="W"
+          detailHref="/wwtp"
+          detailLabel="Lihat detail IPAL"
+        >
+          <div className="mini-stat mb-3">
+            <span className="mini-stat-label">Laju Alir</span>
+            <span className="mini-stat-value">{data?.wwtp?.flow || 0}</span>
+            <span className="mini-stat-unit">L/min</span>
           </div>
-          <div className="card-body">
-            <div className="mini-stat mb-3">
-              <span className="mini-stat-label">Flow Rate</span>
-              <span className="mini-stat-value">{data?.wwtp?.flow || 0}</span>
-              <span className="mini-stat-unit">L/min</span>
+          <div className="mini-stat mb-3">
+            <span className="mini-stat-label">Tekanan</span>
+            <span className="mini-stat-value">{formatKoma(data?.wwtp?.pressure || 0)}</span>
+            <span className="mini-stat-unit">bar</span>
+          </div>
+          <div className="mini-stat mb-3">
+            <span className="mini-stat-label">Nilai pH</span>
+            {/* Alasan: batas tampil di samping nilai agar operator langsung tahu ambang tanpa membuka halaman detail. */}
+            <span className="mini-stat-value" style={{ color: getPhColor(wwtpPh) }}>
+              {formatKoma(wwtpPh)}{' '}
+              <span className="text-xs font-normal text-slate-500">(batas 6,0-8,5)</span>
+            </span>
+            <span className="mini-stat-unit">pH</span>
+          </div>
+          <div className="indicators-row">
+            <div className={`indicator-card ${data?.wwtp?.pump_status ? 'active' : 'inactive'}`}>
+              <span className={`status-dot ${data?.wwtp?.pump_status ? 'active' : 'inactive'}`} />
+              <span className="indicator-text">Pompa {data?.wwtp?.pump_status ? 'Aktif' : 'Mati'}</span>
             </div>
-            <div className="mini-stat mb-3">
-              <span className="mini-stat-label">Pressure</span>
-              <span className="mini-stat-value">{data?.wwtp?.pressure || 0}</span>
-              <span className="mini-stat-unit">Bar</span>
-            </div>
-            <div className="mini-stat mb-3">
-              <span className="mini-stat-label">pH Level</span>
-              <span className="mini-stat-value" style={{ color: getPhColor(data?.wwtp?.ph || 7) }}>
-                {data?.wwtp?.ph || 0}
-              </span>
-              <span className="mini-stat-unit">pH</span>
-            </div>
-            <div className="indicators-row">
-              <div className={`indicator-card ${data?.wwtp?.pump_status ? 'active' : 'inactive'}`}>
-                <span className={`status-dot ${data?.wwtp?.pump_status ? 'active' : 'inactive'}`} />
-                <span className="indicator-text">Pompa {data?.wwtp?.pump_status ? 'ON' : 'OFF'}</span>
-              </div>
-              <div className={`indicator-card ${data?.wwtp?.valve_status ? 'active' : 'inactive'}`}>
-                <span className={`status-dot ${data?.wwtp?.valve_status ? 'active' : 'inactive'}`} />
-                <span className="indicator-text">Katup {data?.wwtp?.valve_status ? 'Open' : 'Close'}</span>
-              </div>
+            <div className={`indicator-card ${data?.wwtp?.valve_status ? 'active' : 'inactive'}`}>
+              <span className={`status-dot ${data?.wwtp?.valve_status ? 'active' : 'inactive'}`} />
+              <span className="indicator-text">Katup {data?.wwtp?.valve_status ? 'Terbuka' : 'Tertutup'}</span>
             </div>
           </div>
-        </div>
+        </SystemCard>
 
-        <div className="system-card">
-          <div className="card-header">
-            <div className="card-header-left">
-              <div className="card-icon bg-cyan-50">💧</div>
-              <div>
-                <h2>Clean Water</h2>
-                <div className="subtitle">Distribution System</div>
-              </div>
-            </div>
-            <Link href="/clean-water" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
-              Detail
-            </Link>
+        <SystemCard
+          title="Air Bersih"
+          subtitle="Unit 2 • %MW200"
+          initial="A"
+          detailHref="/clean-water"
+          detailLabel="Lihat detail Air Bersih"
+        >
+          <div className="mini-stat mb-3">
+            <span className="mini-stat-label">Laju Alir</span>
+            <span className="mini-stat-value">{data?.clean_water?.flow || 0}</span>
+            <span className="mini-stat-unit">L/min</span>
           </div>
-          <div className="card-body">
-            <div className="mini-stat mb-3">
-              <span className="mini-stat-label">Flow Rate</span>
-              <span className="mini-stat-value">{data?.clean_water?.flow || 0}</span>
-              <span className="mini-stat-unit">L/min</span>
-            </div>
-            <div className="mini-stat mb-3">
-              <span className="mini-stat-label">Pressure</span>
-              <span className="mini-stat-value">{data?.clean_water?.pressure || 0}</span>
-              <span className="mini-stat-unit">Bar</span>
-            </div>
-            <div className="indicators-row">
-              <div className={`indicator-card ${data?.clean_water?.dist_status ? 'active' : 'inactive'}`}>
-                <span className={`status-dot ${data?.clean_water?.dist_status ? 'active' : 'inactive'}`} />
-                <span className="indicator-text">Distribution {data?.clean_water?.dist_status ? 'Active' : 'Inactive'}</span>
-              </div>
-            </div>
+          <div className="mini-stat mb-3">
+            <span className="mini-stat-label">Tekanan</span>
+            <span className="mini-stat-value">{formatKoma(data?.clean_water?.pressure || 0)}</span>
+            <span className="mini-stat-unit">bar</span>
           </div>
-        </div>
-
-        <div className={`system-card ${data?.fire_system?.status ? 'alert' : ''}`}>
-          <div className="card-header">
-            <div className="card-header-left">
-              <div className="card-icon bg-red-50">🔥</div>
-              <div>
-                <h2>Fire System</h2>
-                <div className="subtitle">Protection System</div>
-              </div>
-            </div>
-            <Link href="/fire-system" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
-              Detail
-            </Link>
-          </div>
-          <div className="card-body">
-            <div className="mini-stat mb-3">
-              <span className="mini-stat-label">Room Temp</span>
-              <span className="mini-stat-value">{data?.fire_system?.temp || 0}</span>
-              <span className="mini-stat-unit">°C</span>
-            </div>
-            <div className="mini-stat mb-3">
-              <span className="mini-stat-label">Smoke Level</span>
-              <span className="mini-stat-value" style={{ color: data?.fire_system?.smoke && data.fire_system.smoke > 500 ? '#ef4444' : undefined }}>
-                {data?.fire_system?.smoke || 0}
+          <div className="indicators-row">
+            <div className={`indicator-card ${data?.clean_water?.dist_status ? 'active' : 'inactive'}`}>
+              <span className={`status-dot ${data?.clean_water?.dist_status ? 'active' : 'inactive'}`} />
+              <span className="indicator-text">
+                Distribusi {data?.clean_water?.dist_status ? 'Aktif' : 'Nonaktif'}
               </span>
-              <span className="mini-stat-unit">ppm</span>
-            </div>
-            <div className="indicators-row">
-              <div className={`indicator-card ${data?.fire_system?.status ? 'inactive' : 'active'}`}>
-                <span className={`status-dot ${data?.fire_system?.status ? 'inactive' : 'active'}`} />
-                <span className="indicator-text">
-                  {data?.fire_system?.status ? 'FIRE ALARM' : 'Normal'}
-                </span>
-              </div>
             </div>
           </div>
-        </div>
+        </SystemCard>
+
+        {/* Alasan: hanya kartu kebakaran yang mendapat penekanan penuh saat status 1 agar perhatian tidak terpecah ke kartu netral. */}
+        <SystemCard
+          title="Proteksi Kebakaran"
+          subtitle="Unit 3 • %MW300"
+          initial="F"
+          tone={isFireAlarm ? 'danger' : 'normal'}
+          isAlert={isFireAlarm}
+          detailHref="/fire-system"
+          detailLabel="Lihat detail Proteksi Kebakaran"
+        >
+          <div className="mini-stat mb-3">
+            <span className="mini-stat-label">Suhu Ruangan</span>
+            <span className="mini-stat-value">{data?.fire_system?.temp || 0}</span>
+            <span className="mini-stat-unit">°C</span>
+          </div>
+          <div className="mini-stat mb-3">
+            <span className="mini-stat-label">Sensor Asap</span>
+            <span
+              className="mini-stat-value"
+              style={{ color: data?.fire_system?.smoke && data.fire_system.smoke > 500 ? '#ef4444' : undefined }}
+            >
+              {data?.fire_system?.smoke || 0}
+            </span>
+            <span className="mini-stat-unit">ADC</span>
+          </div>
+          <div className="indicators-row">
+            <div className={`indicator-card ${isFireAlarm ? 'inactive' : 'active'}`}>
+              <span className={`status-dot ${isFireAlarm ? 'inactive' : 'active'}`} />
+              <span className="indicator-text">{isFireAlarm ? 'Kebakaran' : 'Normal'}</span>
+            </div>
+          </div>
+        </SystemCard>
       </div>
 
       {activeAlarms.length > 0 && (
-        <div className="detail-section">
-          <div className="detail-section-header flex items-center justify-between">
-            <span>Alarm Aktif</span>
-            <span className="text-xs font-normal text-red-600">{activeAlarms.length} alarm</span>
-          </div>
-          <div className="detail-section-body">
+        <Card className="mb-8">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold">Alarm Aktif</CardTitle>
+            <Badge variant="destructive">{activeAlarms.length} alarm</Badge>
+          </CardHeader>
+          <CardContent>
             <div className="space-y-2">
               {activeAlarms.slice(0, 5).map((alarm: any) => (
-                <div key={alarm.id} className={`flex items-center justify-between p-3 rounded-lg ${alarm.level === 'critical' ? 'bg-red-50' : 'bg-amber-50'}`}>
-                  <div className="flex items-center gap-3">
-                    <span className={`px-2 py-1 rounded text-xs font-semibold ${alarm.level === 'critical' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
-                      {alarm.level.toUpperCase()}
-                    </span>
-                    <span className="text-sm font-medium">{alarm.source}</span>
+                <div
+                  key={alarm.id}
+                  className={`flex items-center justify-between gap-3 p-3 rounded-lg ${alarm.level === 'critical' ? 'bg-red-50' : 'bg-amber-50'}`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Badge variant={alarm.level === 'critical' ? 'destructive' : 'warning'}>
+                      {alarm.level === 'critical' ? 'KRITIS' : 'PERINGATAN'}
+                    </Badge>
+                    <span className="text-sm font-medium truncate">{alarm.source}</span>
                   </div>
-                  <span className="text-sm text-slate-600">{alarm.message}</span>
+                  <span className="text-sm text-slate-600 text-right shrink-0">{alarm.message}</span>
                 </div>
               ))}
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
-      <div className="mt-8 text-center text-sm text-slate-400">
-        <p>Last Update: {data?.timestamp ? new Date(data.timestamp).toLocaleString('id-ID') : '-'}</p>
-        <p className="text-xs mt-1">Simulated Data - Modbus TCP/IP Architecture - OPC UA Protocol</p>
+      <div className="mt-8 text-center text-sm text-slate-600">
+        <p>Terakhir diperbarui: {data?.timestamp ? new Date(data.timestamp).toLocaleString('id-ID') : '-'}</p>
       </div>
     </div>
   );
-}
-
-function getPhColor(ph: number): string {
-  if (ph < 6 || ph > 8.5) return '#ef4444';
-  return '#1e293b';
 }

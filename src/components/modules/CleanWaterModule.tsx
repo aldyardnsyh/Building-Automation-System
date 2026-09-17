@@ -13,10 +13,10 @@ export default function CleanWaterModule({ data }: CleanWaterProps) {
   if (!data) return null;
 
   return (
-    <SystemCard 
-      title="Clean Water Distribution" 
+    <SystemCard
+      title="Clean Water Distribution"
       subtitle="Slave 2 - Modbus Address %MW200"
-      icon="💧"
+      icon="C"
       iconBg="bg-cyan-50"
     >
       <div className="metric-grid">
@@ -28,21 +28,23 @@ export default function CleanWaterModule({ data }: CleanWaterProps) {
           units="L/min"
           value={data.flow}
           label="Laju Alir"
+          thresholdText="Batas operasi 0-1000 L/min"
         />
         <Gauge
           type="linear"
           id="cw-pressure"
           minValue={0}
           maxValue={10}
-          units="Bar"
+          units="bar"
           value={data.pressure}
           label="Tekanan"
+          thresholdText="Batas operasi 0-10 bar"
         />
       </div>
       <div className="indicators-row">
         <StatusIndicator
           id="cw-dist"
-          label={data.dist_status === 1 ? 'Distribusi Aktif' : 'Distribusi Non-Aktif'}
+          label={data.dist_status === 1 ? 'Distribusi Aktif' : 'Distribusi Nonaktif'}
           isActive={data.dist_status === 1}
         />
       </div>

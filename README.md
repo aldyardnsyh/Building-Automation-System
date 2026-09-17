@@ -1,250 +1,197 @@
-# BAS IoT Dashboard - Building Automation System
+# BAS IoT Monitoring Dashboard
 
-Dashboard monitoring untuk sistem Building Automation System (BAS) berbasis OPC UA dan IoT dengan integrasi Modbus TCP/IP. Proyek ini merupakan implementasi Tugas Akhir: "Redesain Sistem Kontrol Terminal Utama BAS Berbasis OPC UA dan IoT".
+Dashboard monitoring untuk Building Automation System (BAS) berbasis OPC UA dan IoT dengan integrasi Modbus TCP/IP. Aplikasi ini merupakan implementasi dari "Redesain Sistem Kontrol Terminal Utama BAS Berbasis OPC UA dan IoT", Politeknik Negeri Bandung, Lab. Perancangan.
 
-## 📋 Daftar Isi
+Seluruh data yang ditampilkan saat ini adalah **data simulasi untuk pengujian**, bukan data produksi dari perangkat fisik.
 
+## Daftar Isi
+
+- [Fitur](#fitur)
+- [Teknologi](#teknologi)
 - [Persyaratan Sistem](#persyaratan-sistem)
 - [Instalasi](#instalasi)
 - [Menjalankan Aplikasi](#menjalankan-aplikasi)
-- [Struktur Folder](#struktur-folder)
-- [Fitur Dashboard](#fitur-dashboard)
+- [Struktur Proyek](#struktur-proyek)
 - [Arsitektur Sistem](#arsitektur-sistem)
-- [Dokumentasi Tambahan](#dokumentasi-tambahan)
+- [Data Simulasi](#data-simulasi)
+- [Lisensi](#lisensi)
 
----
+## Fitur
 
-## 🔧 Persyaratan Sistem
+### Ringkasan (`/`)
 
-| Software | Versi Minimum |
-|----------|---------------|
-| Node.js | 18.x atau lebih tinggi |
-| npm | 9.x atau lebih tinggi |
-| Browser | Chrome, Firefox, Edge (versi terbaru) |
+- Empat kartu KPI dengan nilai live dan sparkline tren: laju alir IPAL, laju air bersih, suhu Zona A, dan jumlah alarm aktif.
+- Kartu status tiga unit (IPAL, Air Bersih, Proteksi Kebakaran) dengan indikator pompa, katup, dan distribusi.
+- Pratinjau alarm aktif dengan lencana tingkat keparahan.
 
-**Catatan:** Saya merekomendasikan menggunakan VS Code sebagai editor kode.
+### Halaman Detail (`/wwtp`, `/clean-water`, `/fire-system`)
 
----
+Setiap halaman detail memakai navigasi tab:
 
-## 📥 Instalasi
+- **Sensor**: nilai analog per register PLC beserta batas operasi, status digital per bit, dan panel kontrol (reset alarm, export CSV).
+- **Tren**: grafik real-time per parameter dengan garis ambang peringatan dan kritis, dapat diekspor ke CSV.
+- **Skema**: diagram skematik proses (SVG interaktif) yang menganimasikan aliran, status pompa dan katup, serta kondisi alarm mengikuti data live.
+- **Alarm**: riwayat alarm spesifik unit tersebut.
 
-### Langkah 1: Clone Repository
+Halaman Proteksi Kebakaran menampilkan banner evakuasi saat status kebakaran aktif.
+
+### Alarm (`/alarm`)
+
+- Ringkasan jumlah alarm kritis, peringatan, dan total.
+- Filter berdasar tingkat keparahan, pengurutan kolom Sumber dan Level, dan export CSV.
+
+### Ambang Batas (`/ambang`)
+
+- Konfigurasi ambang peringatan dan kritis untuk pH, suhu, dan asap, lengkap dengan visualisasi rentang dan penanda posisi nilai live.
+- Mode demo: perubahan tersimpan di browser saja dan belum diteruskan ke PLC.
+
+### Aksesibilitas
+
+- Navigasi keyboard penuh, skip link, indikator fokus yang terlihat, dan teks alternatif untuk seluruh diagram dan grafik.
+- Target sentuh minimum 44px, angka tabular agar tidak bergeser, dan seluruh animasi menghormati `prefers-reduced-motion` serta dapat dijeda manual.
+
+## Teknologi
+
+| Lapisan | Teknologi |
+|---|---|
+| Framework | Next.js 14 (App Router), React 18, TypeScript |
+| UI | Tailwind CSS 3, shadcn/ui (Radix Primitives), Recharts |
+| Visualisasi | Canvas kustom untuk tren, SVG interaktif untuk skema proses |
+| Font | Fira Sans (antarmuka), Fira Code (angka) via Google Fonts |
+| Data | Hook simulasi internal (`useBASData`, interval 2 detik) |
+
+## Persyaratan Sistem
+
+| Perangkat Lunak | Versi Minimum |
+|---|---|
+| Node.js | 18.x |
+| npm | 9.x |
+| Peramban | Chrome, Firefox, atau Edge versi terbaru |
+
+## Instalasi
 
 ```bash
 git clone https://github.com/aldyardnsyh/Building-Automation-System.git
-cd Building-Automation-System/BAS-IoT-Dashboard
-```
-
-### Langkah 2: Install Dependencies
-
-```bash
+cd Building-Automation-System
 npm install
 ```
 
-Proses ini akan menginstall semua package yang diperlukan:
-- Next.js 14
-- React 18
-- Tailwind CSS
-- TypeScript
-- Canvas Gauges (untuk visualisasi)
+## Menjalankan Aplikasi
 
-### Langkah 3: Verifikasi Installation
-
-Pastikan tidak ada error saat installation. Jika ada error, coba:
-```bash
-npm install --force
-```
-
----
-
-## 🚀 Menjalankan Aplikasi
-
-### Mode Development
+Mode pengembangan:
 
 ```bash
 npm run dev
 ```
 
-Setelah menjalankan perintah di atas, dashboard dapat diakses di:
-```
-http://localhost:3000
-```
+Buka `http://localhost:3000` di peramban. Jika port 3000 terpakai, Next.js otomatis memakai port berikutnya (3001, 3002, dan seterusnya); periksa output terminal.
 
-### Mode Production
+Mode produksi:
 
 ```bash
-# Build project
 npm run build
-
-# Jalankan production server
 npm start
 ```
 
-### Kustomisasi Port
+Pemeriksaan tipe:
 
-Jika port 3000 sudah digunakan, Next.js akan secara otomatis menggunakan port lain (3001, 3002, dst). Cek output terminal untuk melihat port yang digunakan.
+```bash
+npx tsc --noEmit
+```
 
----
-
-## 📁 Struktur Folder
+## Struktur Proyek
 
 ```
-BAS-IoT-Dashboard/
-├── .gitignore                    # File yang diabaikan oleh Git
-├── package.json                  # Konfigurasi npm dan dependencies
+├── package.json                  # Dependensi dan skrip npm
+├── tailwind.config.js            # Token shadcn dan keluarga font
 ├── tsconfig.json                 # Konfigurasi TypeScript
-├── tailwind.config.js            # Konfigurasi Tailwind CSS
-├── postcss.config.js             # Konfigurasi PostCSS
 ├── next.config.js                # Konfigurasi Next.js
-├── next-env.d.ts                 # Type declarations untuk Next.js
-│
-├── src/
-│   ├── app/                      # Next.js App Router
-│   │   ├── globals.css           # Global styles dan custom CSS
-│   │   ├── layout.tsx            # Root layout (metadata, HTML wrapper)
-│   │   ├── ClientLayout.tsx      # Client-side layout (header, navigation)
-│   │   ├── page.tsx              # Halaman Overview (Dashboard Utama)
-│   │   │
-│   │   ├── wwtp/                 # Halaman Detail WWTP
-│   │   │   └── page.tsx          # Slave 1 - Waste Water Treatment Plant
-│   │   │
-│   │   ├── clean-water/          # Halaman Detail Clean Water
-│   │   │   └── page.tsx          # Slave 2 - Clean Water Distribution
-│   │   │
-│   │   └── fire-system/          # Halaman Detail Fire System
-│   │       └── page.tsx          # Slave 3 - Fire Protection System
-│   │
-│   ├── components/               # Komponen React yang dapat reuse
-│   │   ├── Gauge.tsx             # Komponen gauge (linear & radial)
-│   │   ├── StatusIndicator.tsx  # Indikator status ON/OFF
-│   │   ├── SystemCard.tsx       # Card wrapper untuk setiap sistem
-│   │   │
-│   │   ├── common/              # Komponen umum (shared)
-│   │   │   ├── TrendChart.tsx   # Grafik trend real-time (Canvas)
-│   │   │   ├── AlarmTable.tsx   # Tabel riwayat alarm
-│   │   │   └── PIDDiagram.tsx  # Diagram P&ID (SVG)
-│   │   │
-│   │   └── modules/             # Komponen spesifik per modul
-│   │       ├── WWTPModule.tsx
-│   │       ├── CleanWaterModule.tsx
-│   │       └── FireSystemModule.tsx
-│   │
-│   ├── hooks/                    # Custom React Hooks
-│   │   └── useBASData.ts        # Hook untuk generate dummy data + trend history
-│   │
-│   ├── lib/                      # Utility functions
-│   │   └── dataGenerator.ts     # Generator data dummy
-│   │
-│   └── types/                    # TypeScript type definitions
-│       └── bas.ts               # Tipe data untuk BAS (WWTPSlave, CleanWaterSlave, dll)
-│
-└── public/                       # Static assets (jika ada)
+└── src/
+    ├── app/                      # App Router
+    │   ├── globals.css           # Token desain, gaya BAS, animasi mimic
+    │   ├── layout.tsx            # Root layout dan font
+    │   ├── global-error.tsx      # Halaman error tingkat root
+    │   ├── ClientLayout.tsx      # Sidebar, drawer mobile, footer
+    │   ├── page.tsx              # Ringkasan (KPI + kartu unit)
+    │   ├── alarm/page.tsx        # Riwayat dan filter alarm
+    │   ├── ambang/page.tsx       # Konfigurasi ambang batas
+    │   ├── wwtp/page.tsx         # Detail Unit 1 (IPAL)
+    │   ├── clean-water/page.tsx  # Detail Unit 2 (Air Bersih)
+    │   └── fire-system/page.tsx  # Detail Unit 3 (Proteksi Kebakaran)
+    ├── components/
+    │   ├── ui/                   # Komponen shadcn (button, card, badge, tabs, table, ...)
+    │   ├── charts/               # Sparkline Recharts
+    │   ├── common/               # TrendChart, AlarmTable, PIDDiagram
+    │   ├── modules/              # Modul lama per unit (tidak dipakai halaman aktif)
+    │   ├── Gauge.tsx             # Gauge linear dan radial
+    │   ├── StatusIndicator.tsx   # Indikator status boolean
+    │   └── SystemCard.tsx        # Kartu pembungkus unit di Ringkasan
+    ├── hooks/
+    │   └── useBASData.ts         # Simulasi data, riwayat tren, dan alarm
+    ├── lib/
+    │   ├── utils.ts              # Utilitas `cn` untuk kelas CSS
+    │   └── dataGenerator.ts      # Generator nilai acak
+    └── types/
+        └── bas.ts                # Tipe WWTPSlave, CleanWaterSlave, FireSystemSlave, BASData
 ```
 
----
+## Arsitektur Sistem
 
-## 🎯 Fitur Dashboard
+### Hierarki Komunikasi
 
-### 1. Halaman Overview (`/`)
-- **Quick Stats**: Total Slave, Sensor Aktif, Alarm Aktif, Status Sistem
-- **System Cards**: Ringkasan singkat WWTP, Clean Water, Fire System
-- **Alarm Summary**: Daftar alarm aktif terbaru
-
-### 2. Halaman Detail WWTP (`/wwtp`)
-- **Analog Sensors**: Flow Rate, Pressure, pH Level dengan register address
-- **Digital Status**: Status Pompa dan Katup
-- **Trend Charts**: Grafik real-time untuk setiap parameter
-- **Alarm Table**: Riwayat alarm untuk WWTP
-- **P&ID Diagram**: Schematic proses pengolahan air limbah
-
-### 3. Halaman Detail Clean Water (`/clean-water`)
-- **Analog Sensors**: Flow Rate, Pressure
-- **Digital Status**: Distribution Status
-- **Trend Charts**: Monitoring debit dan tekanan
-- **P&ID Diagram**: Schematic distribusi air bersih
-
-### 4. Halaman Detail Fire System (`/fire-system`)
-- **Analog Sensors**: Room Temperature, Smoke Level
-- **Digital Status**: Fire Alarm Status
-- **Trend Charts**: Monitoring suhu dan asap dengan threshold warning/critical
-- **Fire Alert Banner**: Tampilan khusus saat fire alarm aktif
-- **P&ID Diagram**: Schematic sistem proteksi kebakaran
-
----
-
-## 🏗️ Arsitektur Sistem
-
-### Hierarki Komunikasi (sesuai Draft Proposal)
-
-| Layer | Komponen | Protokol |
-|-------|----------|----------|
-| Field Level | Sensor (MQ-2, PIR, PZEM-004T, Suhu) | Hardwired/Analog I/O |
-| Control Level | PLC Schneider Modicon TM221 | Modbus TCP/IP |
-| Network Level | Ethernet Switch, Router | TCP/IP, Ethernet |
-| Supervisory Level | PC Server (Kepware OPC UA) | OPC UA, SuiteLink |
-| Gateway Level | Node-RED | MQTT, HTTPS, OPC UA |
-| Cloud Level | Ubidots Dashboard, Telegram Bot | JSON, MQTT |
+| Lapisan | Komponen | Protokol |
+|---|---|---|
+| Field | Sensor (suhu, asap, aliran, tekanan, pH) | Hardwired / Analog I/O |
+| Kontrol | PLC Schneider Modicon TM221 | Modbus TCP/IP |
+| Jaringan | Ethernet Switch, Router | TCP/IP, Ethernet |
+| Supervisi | PC Server (Kepware OPC UA) | OPC UA |
+| Gateway | Node-RED | MQTT, HTTPS, OPC UA |
+| Cloud | Dashboard Ubidots, Bot Telegram | JSON, MQTT |
 
 ### Pemetaan Register PLC
 
-#### Slave 1: WWTP
-| Parameter | Alamat PLC | Alamat Modbus | Tipe |
-|-----------|------------|---------------|------|
-| Laju Alir Air | %MW100 | 40101 | Integer |
-| Tekanan Pipa | %MW101 | 40102 | Integer |
-| Nilai pH Air | %MW102 | 40103 | Integer |
-| Status Pompa | %MW103:X0 | 40104 bit 0 | Boolean |
-| Status Katup | %MW103:X1 | 40104 bit 1 | Boolean |
+#### Unit 1: IPAL (WWTP)
 
-#### Slave 2: Clean Water
 | Parameter | Alamat PLC | Alamat Modbus | Tipe |
-|-----------|------------|---------------|------|
-| Laju Alir | %MW200 | 40201 | Integer |
+|---|---|---|---|
+| Laju alir | %MW100 | 40101 | Integer |
+| Tekanan | %MW101 | 40102 | Integer |
+| Nilai pH | %MW102 | 40103 | Integer |
+| Status pompa | %MW103:X0 | Bit 0 | Boolean |
+| Status katup | %MW103:X1 | Bit 1 | Boolean |
+
+#### Unit 2: Air Bersih
+
+| Parameter | Alamat PLC | Alamat Modbus | Tipe |
+|---|---|---|---|
+| Laju alir | %MW200 | 40201 | Integer |
 | Tekanan | %MW201 | 40202 | Integer |
-| Status Distribusi | %MW203:X0 | 40204 bit 0 | Boolean |
+| Status distribusi | %MW203:X0 | Bit 0 | Boolean |
 
-#### Slave 3: Fire System
+#### Unit 3: Proteksi Kebakaran
+
 | Parameter | Alamat PLC | Alamat Modbus | Tipe |
-|-----------|------------|---------------|------|
-| Suhu Ruangan | %MW300 | 40301 | Integer |
-| Sensor Asap | %MW301 | 40302 | Integer |
-| Status Kebakaran | %MW302:X0 | 40304 bit 0 | Boolean |
+|---|---|---|---|
+| Suhu ruangan | %MW300 | 40301 | Integer |
+| Sensor asap | %MW301 | 40302 | Integer (0-1023) |
+| Status kebakaran | %MW302:X0 | Bit 0 | Boolean |
 
----
+### Ambang Operasional
 
-## 📝 Catatan Pengembangan
+| Sensor | Peringatan | Kritis |
+|---|---|---|
+| pH IPAL | Di luar 6,0-8,5 | Di luar 6,0-8,5 |
+| Suhu Zona A | 45 °C | 60 °C |
+| Asap | 500 ADC | 700 ADC |
 
-### Dummy Data
-- Sistem saat ini menggunakan data dummy yang di-generate secara otomatis
-- Data di-update setiap 2 detik
-- Alarm secara otomatis dihasilkan jika nilai melebihi threshold
+## Data Simulasi
 
-### Koneksi Real
-Untuk menghubungkan dengan sistem nyata:
-1. **PLC**: Konfigurasi IP PLC di Node-RED
-2. **OPC UA**: Setup Kepware dengan driver Modbus TCP/IP
-3. **Cloud**: Konfigurasi Ubidots token dan Telegram Bot API
+- Nilai dibangkitkan acak di sekitar titik operasi nominal dan diperbarui tiap 2 detik.
+- Alarm dibangkitkan otomatis saat nilai melewati ambang pada tabel di atas.
+- Riwayat tren menyimpan maksimal 30 titik terakhir per parameter.
 
-### Teknologi yang Digunakan
-- **Frontend**: Next.js 14, React 18, TypeScript
-- **Styling**: Tailwind CSS (White mode)
-- **Charts**: Canvas Gauges, Custom SVG
-- **Icons**: Emoji-based (untuk kesederhanaan)
+Untuk koneksi ke sistem nyata, integrasikan klien Modbus TCP/IP atau OPC UA pada hook `useBASData` menggantikan generator acak, dengan format data yang sama seperti tipe di `src/types/bas.ts`.
 
----
+## Lisensi
 
-## 📄 License
-
-Proyek ini dikembangkan untuk Tugas Akhir Politeknik Negeri Bandung.
-
----
-
-## 👨‍🎓 Informasi Tugas Akhir
-
-- **Judul**: Redesain Sistem Kontrol Terminal Utama BAS Berbasis OPC UA dan IoT
-- **Institusi**: Politeknik Negeri Bandung - Lab. Perancangan
-- **Protokol**: OPC UA, Modbus TCP/IP, MQTT
-
----
-
-Dibuat dengan ❤️ untuk mendukung pengembangan sistem Building Automation yang modern dan terintegrasi.
+Proyek akademik untuk Tugas Akhir, Politeknik Negeri Bandung.

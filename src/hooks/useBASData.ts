@@ -63,11 +63,12 @@ export function useBASData(interval: number = 2000) {
     updateHistory('fire-smoke', newData.fire_system.smoke);
 
     if (newData.wwtp.ph < 6 || newData.wwtp.ph > 8.5) {
+      const phStr = newData.wwtp.ph.toFixed(1).replace('.', ',');
       const newAlarm = {
         id: `alarm-${now}`,
         timestamp: new Date().toLocaleString('id-ID'),
         source: 'WWTP',
-        message: `pH level ${newData.wwtp.ph} - ${newData.wwtp.ph < 6 ? 'Too Acidic' : 'Too Alkaline'}`,
+        message: `pH ${phStr} di luar batas aman (6,0-8,5)`,
         level: 'warning',
         acknowledged: false,
       };
@@ -79,7 +80,8 @@ export function useBASData(interval: number = 2000) {
         id: `alarm-${now}`,
         timestamp: new Date().toLocaleString('id-ID'),
         source: 'Fire System',
-        message: 'FIRE ALARM TRIGGERED - Evacuate Immediately',
+        zona: 'Zona A',
+        message: 'Indikasi kebakaran terdeteksi, evakuasi Area A (Zona A)',
         level: 'critical',
         acknowledged: false,
       };
@@ -91,7 +93,8 @@ export function useBASData(interval: number = 2000) {
         id: `alarm-${now}`,
         timestamp: new Date().toLocaleString('id-ID'),
         source: 'Fire System',
-        message: `Smoke level high: ${newData.fire_system.smoke} ppm`,
+        zona: 'Zona A',
+        message: `Asap tinggi: ${newData.fire_system.smoke} (ambang 500)`,
         level: 'warning',
         acknowledged: false,
       };

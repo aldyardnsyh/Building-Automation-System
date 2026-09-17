@@ -16,7 +16,7 @@ export default function FireSystemModule({ data }: FireSystemProps) {
     <SystemCard
       title="Fire Protection System"
       subtitle="Slave 3 - Modbus Address %MW300"
-      icon="🔥"
+      icon="F"
       iconBg="bg-red-50"
       isAlert={data.status === 1}
     >
@@ -29,21 +29,27 @@ export default function FireSystemModule({ data }: FireSystemProps) {
           units="°C"
           value={data.temp}
           label="Suhu Ruangan"
+          thresholdText="Ambang peringatan 45°C, kritis 60°C"
+          warningThreshold={45}
+          criticalThreshold={60}
         />
         <Gauge
           type="linear"
           id="fire-smoke"
           minValue={0}
           maxValue={1023}
-          units="ppm"
+          units="ADC"
           value={data.smoke}
           label="Sensor Asap"
+          thresholdText="Peringatan >500, kritis >700 (ADC)"
+          warningThreshold={500}
+          criticalThreshold={700}
         />
       </div>
       <div className="indicators-row">
         <StatusIndicator
           id="fire-status"
-          label={data.status === 1 ? '🚨 FIRE ALARM - EVACUATE!' : 'Status Normal'}
+          label={data.status === 1 ? 'Status Kebakaran: Kebakaran' : 'Status Kebakaran: Normal'}
           isActive={data.status === 1}
         />
       </div>

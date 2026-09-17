@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface DataPoint {
   timestamp: number;
@@ -17,22 +17,25 @@ interface TrendChartProps {
   data: DataPoint[];
   warningThreshold?: number;
   criticalThreshold?: number;
+  emptyMessage?: string;
 }
 
-export default function TrendChart({ 
-  id, 
-  label, 
-  unit, 
-  minValue, 
-  maxValue, 
-  color = '#3b82f6',
+export default function TrendChart({
+  id,
+  label,
+  unit,
+  minValue,
+  maxValue,
+  color = '#1d4ed8',
   data = [],
   warningThreshold,
-  criticalThreshold 
+  criticalThreshold,
+  emptyMessage = 'Menunggu data...'
 }: TrendChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    if (data.length < 2) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -51,7 +54,7 @@ export default function TrendChart({
     ctx.fillRect(0, 0, width, height);
 
     const gridLines = 5;
-    ctx.strokeStyle = '#e2e8f0';
+    ctx.strokeStyle = '#cbd5e1';
     ctx.lineWidth = 1;
     ctx.setLineDash([5, 5]);
 
@@ -63,8 +66,8 @@ export default function TrendChart({
       ctx.stroke();
 
       const value = maxValue - ((maxValue - minValue) / gridLines) * i;
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '10px Inter, sans-serif';
+      ctx.fillStyle = '#475569';
+      ctx.font = '10px "Fira Code", monospace';
       ctx.textAlign = 'right';
       ctx.fillText(value.toFixed(1), padding.left - 8, y + 4);
     }
@@ -72,7 +75,7 @@ export default function TrendChart({
 
     if (criticalThreshold !== undefined) {
       const critY = padding.top + ((maxValue - criticalThreshold) / (maxValue - minValue)) * chartHeight;
-      ctx.strokeStyle = '#ef4444';
+      ctx.strokeStyle = '#b91c1c';
       ctx.lineWidth = 2;
       ctx.setLineDash([10, 5]);
       ctx.beginPath();
@@ -84,7 +87,7 @@ export default function TrendChart({
 
     if (warningThreshold !== undefined) {
       const warnY = padding.top + ((maxValue - warningThreshold) / (maxValue - minValue)) * chartHeight;
-      ctx.strokeStyle = '#f59e0b';
+      ctx.strokeStyle = '#b45309';
       ctx.lineWidth = 2;
       ctx.setLineDash([10, 5]);
       ctx.beginPath();
@@ -132,8 +135,8 @@ export default function TrendChart({
       ctx.stroke();
     }
 
-    ctx.fillStyle = '#64748b';
-    ctx.font = '11px Inter, sans-serif';
+    ctx.fillStyle = '#475569';
+    ctx.font = '11px "Fira Code", monospace';
     ctx.textAlign = 'center';
     const timeLabels = 5;
     for (let i = 0; i <= timeLabels; i++) {
@@ -146,16 +149,43 @@ export default function TrendChart({
     }
 
     ctx.fillStyle = '#1e293b';
-    ctx.font = 'bold 12px Inter, sans-serif';
+    ctx.font = 'bold 12px "Fira Sans", sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText(`${label} (${unit})`, padding.left, 14);
 
+    // Alasan chip nilai terakhir: nilai per titik tidak bisa di-hover di kanvas, jadi angka mutakhir selalu terlihat.
+    const lastPoint = data[data.length - 1];
+    if (lastPoint) {
+      ctx.fillStyle = '#1e293b';
+      ctx.font = 'bold 11px "Fira Code", monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(`Terakhir ${lastPoint.value} ${unit}`, width - padding.right, 14);
+    }
+
   }, [data, minValue, maxValue, color, label, unit, warningThreshold, criticalThreshold]);
+
+  if (data.length < 2) {
+    return (
+      <div className="detail-section">
+        <div className="chart-container flex items-center justify-center">
+          <p className="text-sm text-slate-500">{emptyMessage}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="detail-section">
       <div className="chart-container">
-        <canvas ref={canvasRef} width={600} height={200} className="w-full h-full" />
+        <canvas
+          ref={canvasRef}
+          id={id}
+          width={600}
+          height={200}
+          className="w-full h-full"
+          role="img"
+          aria-label={`${label} tren ${unit}, ${data.length} titik sekitar 60 detik terakhir`}
+        />
       </div>
     </div>
   );
