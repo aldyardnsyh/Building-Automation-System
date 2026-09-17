@@ -14,7 +14,6 @@ Seluruh data yang ditampilkan saat ini adalah **data simulasi untuk pengujian**,
 - [Struktur Proyek](#struktur-proyek)
 - [Arsitektur Sistem](#arsitektur-sistem)
 - [Data Simulasi](#data-simulasi)
-- [Lisensi](#lisensi)
 
 ## Fitur
 
@@ -191,7 +190,3 @@ npx tsc --noEmit
 - Riwayat tren menyimpan maksimal 30 titik terakhir per parameter.
 
 Untuk koneksi ke sistem nyata, integrasikan klien Modbus TCP/IP atau OPC UA pada hook `useBASData` menggantikan generator acak, dengan format data yang sama seperti tipe di `src/types/bas.ts`.
-
-## Lisensi
-
-Proyek akademik untuk Tugas Akhir, Politeknik Negeri Bandung.
